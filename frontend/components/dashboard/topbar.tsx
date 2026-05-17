@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Search, Bell, ChevronDown, X } from 'lucide-react'
+import { useAuthStore } from '@/store/useAuthStore'
 
 const notifications = [
   { id: 1, text: 'New lead "Acme Corp" assigned to you', time: '2m ago', unread: true },
@@ -18,6 +19,8 @@ export function Topbar({ title = 'Dashboard' }: TopbarProps) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const unreadCount = notifications.filter(n => n.unread).length
+  const { user, logout } = useAuthStore()
+  const initials = user?.name ? user.name.substring(0, 2).toUpperCase() : 'U'
 
   return (
     <header className="h-16 border-b border-border flex items-center justify-between px-6 gap-4 relative" style={{ background: 'oklch(0.1 0.008 264)' }}>
@@ -96,9 +99,9 @@ export function Topbar({ title = 'Dashboard' }: TopbarProps) {
             className="flex items-center gap-2 glass border border-white/10 rounded-xl px-3 py-1.5 hover:bg-white/5 transition-all"
           >
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-bold text-white">
-              JD
+              {initials}
             </div>
-            <span className="text-sm text-foreground hidden sm:block">Jane Doe</span>
+            <span className="text-sm text-foreground hidden sm:block">{user?.name || 'User'}</span>
             <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
 
@@ -114,7 +117,10 @@ export function Topbar({ title = 'Dashboard' }: TopbarProps) {
               ))}
               <div className="border-t border-border my-1" />
               <button
-                onClick={() => window.location.href = '/login'}
+                onClick={() => {
+                  logout()
+                  window.location.href = '/login'
+                }}
                 className="w-full text-left px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
               >
                 Sign out

@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Users, BarChart3, MessageSquare, FileText,
-  Download, Settings, Zap, LogOut, ChevronLeft
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/store/useAuthStore'
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -27,6 +27,8 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname()
+  const { user, logout } = useAuthStore()
+  const initials = user?.name ? user.name.substring(0, 2).toUpperCase() : 'U'
 
   return (
     <motion.aside
@@ -107,7 +109,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
       <div className="border-t border-border p-3">
         <div className={cn('flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all cursor-pointer', collapsed && 'justify-center')}>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-            JD
+            {initials}
           </div>
           {!collapsed && (
             <motion.div
@@ -115,15 +117,18 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
               animate={{ opacity: 1 }}
               className="flex-1 min-w-0"
             >
-              <div className="text-sm font-medium text-foreground truncate">Jane Doe</div>
-              <div className="text-xs text-muted-foreground">Admin</div>
+              <div className="text-sm font-medium text-foreground truncate">{user?.name || 'User'}</div>
+              <div className="text-xs text-muted-foreground">{user?.role || 'User'}</div>
             </motion.div>
           )}
           {!collapsed && (
             <button
               className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Sign out"
-              onClick={() => window.location.href = '/login'}
+              onClick={() => {
+                logout()
+                window.location.href = '/login'
+              }}
             >
               <LogOut className="w-4 h-4" />
             </button>
