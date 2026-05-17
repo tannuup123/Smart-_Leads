@@ -4,7 +4,6 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { MONTHLY_DATA, SOURCE_DATA } from '@/lib/leads-data'
 import { motion } from 'framer-motion'
 
 const PIE_COLORS = [
@@ -24,7 +23,28 @@ const tooltipStyle = {
   fontSize: '12px',
 }
 
-export function LeadsAreaChart() {
+interface ChartDataPoint {
+  month: string
+  leads: number
+  qualified: number
+  revenue: number
+}
+
+interface SourceDataPoint {
+  name: string
+  value: number
+}
+
+export function LeadsAreaChart({ monthlyData }: { monthlyData: ChartDataPoint[] }) {
+  const data = monthlyData.length > 0 ? monthlyData : [
+    { month: 'Jan', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Feb', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Mar', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Apr', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'May', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Jun', leads: 0, qualified: 0, revenue: 0 },
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -49,7 +69,7 @@ export function LeadsAreaChart() {
         </div>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={MONTHLY_DATA} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
           <defs>
             <linearGradient id="leadGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="oklch(0.6 0.22 264)" stopOpacity={0.3} />
@@ -72,7 +92,16 @@ export function LeadsAreaChart() {
   )
 }
 
-export function RevenueBarChart() {
+export function RevenueBarChart({ monthlyData }: { monthlyData: ChartDataPoint[] }) {
+  const data = monthlyData.length > 0 ? monthlyData : [
+    { month: 'Jan', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Feb', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Mar', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Apr', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'May', leads: 0, qualified: 0, revenue: 0 },
+    { month: 'Jun', leads: 0, qualified: 0, revenue: 0 },
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -85,7 +114,7 @@ export function RevenueBarChart() {
         <p className="text-xs text-muted-foreground mt-0.5">Monthly revenue from qualified leads</p>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={MONTHLY_DATA} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.2 0.01 264 / 0.5)" />
           <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'oklch(0.55 0.01 264)' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: 'oklch(0.55 0.01 264)' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
@@ -97,7 +126,16 @@ export function RevenueBarChart() {
   )
 }
 
-export function LeadSourcePieChart() {
+export function LeadSourcePieChart({ sourcesData }: { sourcesData: SourceDataPoint[] }) {
+  const data = sourcesData.length > 0 ? sourcesData : [
+    { name: 'Website', value: 0 },
+    { name: 'LinkedIn', value: 0 },
+    { name: 'Referral', value: 0 },
+    { name: 'Cold Email', value: 0 },
+    { name: 'Webinar', value: 0 },
+    { name: 'Organic', value: 0 },
+  ]
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -112,7 +150,7 @@ export function LeadSourcePieChart() {
       <ResponsiveContainer width="100%" height={220}>
         <PieChart>
           <Pie
-            data={SOURCE_DATA}
+            data={data}
             cx="50%"
             cy="50%"
             innerRadius={55}
@@ -120,7 +158,7 @@ export function LeadSourcePieChart() {
             paddingAngle={3}
             dataKey="value"
           >
-            {SOURCE_DATA.map((_, i) => (
+            {data.map((_, i) => (
               <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
             ))}
           </Pie>

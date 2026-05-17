@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import leadRoutes from "./routes/leadRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
+import analyticsRoutes from "./routes/analyticsRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
@@ -27,6 +29,8 @@ app.use(
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/leads", leadRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Test route
 app.get("/", (req, res) => {

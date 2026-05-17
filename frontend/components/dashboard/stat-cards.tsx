@@ -2,24 +2,39 @@
 
 import { motion } from 'framer-motion'
 import { Users, TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react'
-import type { Lead } from '@/lib/leads-data'
 
-interface StatCardsProps {
-  leads: Lead[]
+interface StatCard {
+  label: string
+  value: string | number
+  delta: string
+  positive: boolean
+  icon: any
+  color: string
+  bg: string
+  glow: string
 }
 
-export function StatCards({ leads }: StatCardsProps) {
-  const total = leads.length
-  const qualified = leads.filter(l => l.status === 'Qualified').length
-  const lost = leads.filter(l => l.status === 'Lost').length
-  const revenue = leads.filter(l => l.status === 'Qualified').reduce((s, l) => s + l.value, 0)
-  const convRate = total > 0 ? ((qualified / total) * 100).toFixed(1) : '0'
+interface StatCardsProps {
+  totalLeads: number
+  qualifiedLeads: number
+  lostLeads: number
+  monthlyRevenue: number
+  conversionRate: number
+  deltas: {
+    totalLeads: string
+    qualifiedLeads: string
+    lostLeads: string
+    monthlyRevenue: string
+    conversionRate: string
+  }
+}
 
+export function StatCards({ totalLeads, qualifiedLeads, lostLeads, monthlyRevenue, conversionRate, deltas }: StatCardsProps) {
   const cards = [
     {
       label: 'Total Leads',
-      value: total.toLocaleString(),
-      delta: '+12%',
+      value: totalLeads.toLocaleString(),
+      delta: deltas.totalLeads,
       positive: true,
       icon: Users,
       color: 'text-primary',
@@ -28,8 +43,8 @@ export function StatCards({ leads }: StatCardsProps) {
     },
     {
       label: 'Qualified Leads',
-      value: qualified.toLocaleString(),
-      delta: '+8%',
+      value: qualifiedLeads.toLocaleString(),
+      delta: deltas.qualifiedLeads,
       positive: true,
       icon: TrendingUp,
       color: 'text-emerald-400',
@@ -38,8 +53,8 @@ export function StatCards({ leads }: StatCardsProps) {
     },
     {
       label: 'Lost Leads',
-      value: lost.toLocaleString(),
-      delta: '-2%',
+      value: lostLeads.toLocaleString(),
+      delta: deltas.lostLeads,
       positive: false,
       icon: TrendingDown,
       color: 'text-red-400',
@@ -48,8 +63,8 @@ export function StatCards({ leads }: StatCardsProps) {
     },
     {
       label: 'Monthly Revenue',
-      value: `$${(revenue / 1000).toFixed(0)}K`,
-      delta: '+18%',
+      value: `$${(monthlyRevenue / 1000).toFixed(0)}K`,
+      delta: deltas.monthlyRevenue,
       positive: true,
       icon: DollarSign,
       color: 'text-yellow-400',
@@ -58,8 +73,8 @@ export function StatCards({ leads }: StatCardsProps) {
     },
     {
       label: 'Conversion Rate',
-      value: `${convRate}%`,
-      delta: '+3.1%',
+      value: `${conversionRate.toFixed(1)}%`,
+      delta: deltas.conversionRate,
       positive: true,
       icon: Target,
       color: 'text-accent',
