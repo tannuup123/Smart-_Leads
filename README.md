@@ -55,8 +55,8 @@ The platform supports **two powerful assignment methods**, selectable by the Adm
 ```
 Admin Creates Lead
       │
-      ├── Direct Assign (Kirtee Jeena)
-      │         └── Lead → Kirtee's "My Leads" ✅
+      ├── Direct Assign (sales user)
+      │         └── Lead → sales user "My Leads" ✅
       │
       └── Open Pool (Anyone)
                 └── Visible in "Available Leads"
