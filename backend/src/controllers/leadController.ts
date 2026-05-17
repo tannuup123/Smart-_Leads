@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../middleware/authMiddleware";
 import { Lead } from "../models/Lead";
@@ -16,14 +17,14 @@ export const createLead = async (req: AuthRequest, res: Response, next: NextFunc
     const parsed = leadSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400);
-      throw new Error(parsed.error.errors[0].message);
+      throw new Error(parsed.error.issues[0].message);
     }
 
     const { name, email, status, source, assignedTo } = parsed.data;
 
     let assignedUserId = assignedTo;
     if (req.user?.role === "Sales User") {
-      assignedUserId = req.user.id;
+      assignedUserId = req.user._id.toString();
     }
 
     const lead = await Lead.create({
@@ -64,7 +65,7 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
       if (tab === "available") {
         query.assignedTo = { $eq: null }; 
       } else {
-        query.assignedTo = req.user.id;
+        query.assignedTo = req.user._id.toString();
       }
     } else if (req.user?.role === "Admin") {
       if (tab === "requests") {
@@ -117,7 +118,7 @@ export const updateLead = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     if (req.user?.role === "Sales User") {
-      if (lead.assignedTo?.toString() !== req.user.id) {
+      if (lead.assignedTo?.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error("Not authorized to edit this lead");
       }
@@ -163,7 +164,7 @@ export const exportLeadsCsv = async (req: AuthRequest, res: Response, next: Next
     res.setHeader("Content-Disposition", "attachment; filename=leads.csv");
 
     const headers = ["ID", "Name", "Email", "Status", "Source", "Assigned To", "Created At"];
-    const rows = leads.map((lead: mongoose.Document & { name: string; email: string; status: string; source: string; createdAt: Date; assignedTo?: { name: string } }) => [
+    const rows = leads.map((lead: any) => [
       lead._id,
       lead.name,
       lead.email,
@@ -197,8 +198,8 @@ export const requestLead = async (req: AuthRequest, res: Response, next: NextFun
       throw new Error("Lead is already assigned");
     }
 
-    if (!lead.requestedBy?.includes(req.user?.id as any)) {
-      lead.requestedBy?.push(req.user?.id as any);
+    if (!lead.requestedBy?.includes(req.user?._id.toString() as any)) {
+      lead.requestedBy?.push(req.user?._id.toString() as any);
       await lead.save();
     }
 

@@ -22,7 +22,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400);
-      throw new Error(parsed.error.errors[0].message);
+      throw new Error(parsed.error.issues[0].message);
     }
     const { name, email, password, role } = parsed.data;
 
@@ -69,7 +69,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400);
-      throw new Error(parsed.error.errors[0].message);
+      throw new Error(parsed.error.issues[0].message);
     }
     const { email, password } = parsed.data;
 
