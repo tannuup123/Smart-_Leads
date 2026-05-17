@@ -386,6 +386,19 @@ export function LeadTable() {
             <option value="All">All Sources</option>
             {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+
+          <select
+            value={sortKey === 'createdAt' && sortDir === 'asc' ? 'oldest' : 'latest'}
+            onChange={e => {
+              setSortKey('createdAt')
+              setSortDir(e.target.value === 'latest' ? 'desc' : 'asc')
+              setPage(1)
+            }}
+            className="bg-secondary border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <option value="latest">Sort: Latest Leads</option>
+            <option value="oldest">Sort: Oldest Leads</option>
+          </select>
         </div>
 
         <div className="flex items-center gap-2">
