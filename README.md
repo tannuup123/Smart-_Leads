@@ -1,66 +1,118 @@
-# Smart Leads Dashboard
+<div align="center">
+  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
+  <img src="https://img.shields.io/badge/Express.js-404D59?style=for-the-badge" alt="Express.js" />
+  <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+</div>
 
-A production-ready full-stack Lead Management Dashboard (MERN stack with Next.js and TypeScript). This project demonstrates a premium enterprise UI with glassmorphism design, scalable backend architecture, role-based access, and debounced search with complex filtering.
+<h1 align="center">Smart Leads CRM Dashboard ⚡</h1>
 
-## Tech Stack
-- **Frontend**: Next.js 16, TypeScript, TailwindCSS v4, Framer Motion, shadcn/ui, Zustand, React Query, React Hook Form, Zod.
-- **Backend**: Node.js, Express.js, TypeScript, MongoDB, Mongoose, Zod, JWT.
+<p align="center">
+  <strong>A production-grade, full-stack Lead Management platform engineered for scalability, security, and a premium user experience.</strong>
+</p>
 
-## Setup Instructions
+---
+
+## 🌟 Executive Summary
+
+Smart Leads Dashboard is a complete MERN stack application built with modern architectural standards. It replaces legacy JavaScript patterns with strict **end-to-end TypeScript**, ensuring type safety from the database schemas to the UI components. 
+
+The frontend leverages the power of **Next.js 16 (App Router)** and **React Query** for optimized server-state management, while the backend utilizes **Express.js** and **MongoDB** for highly efficient, paginated data processing.
+
+## ✨ Core Capabilities
+
+### 🔐 Enterprise-Grade Security
+- **JWT Authentication**: Secure stateless token architecture.
+- **Role-Based Access Control (RBAC)**: Distinct permissions for `Admin` and `Sales User`.
+- **Password Encryption**: Utilizing `bcryptjs` for secure hashing.
+- **Request Validation**: Powered by `Zod` schemas on both client and server boundaries.
+
+### 📊 Advanced Data Management
+- **Smart Filtering & Debounced Search**: Combine status, source, and regex-powered keyword search concurrently with zero UI lag.
+- **Server-Side Pagination**: Highly optimized MongoDB queries utilizing `skip` and `limit`.
+- **CSV Export**: Instantly generate and download lead data reports (Admin restricted).
+
+### 🎨 Premium UI/UX
+- **Glassmorphism Design**: Modern, responsive, and accessible interface built with TailwindCSS.
+- **Form Validation**: Real-time error handling with `react-hook-form` and `@hookform/resolvers/zod`.
+- **Intelligent Loading States**: Skeleton loaders and smooth transitions powered by `framer-motion`.
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | Next.js 16, React, TailwindCSS, Zustand | UI framework, styling, and client-side auth state |
+| **Data Fetching** | `@tanstack/react-query`, Axios | Caching, background updates, and API interception |
+| **Backend** | Node.js, Express.js | High-performance RESTful API |
+| **Database** | MongoDB, Mongoose | NoSQL data modeling and aggregation |
+| **Language** | TypeScript (Strict Mode) | Type safety and enhanced DX |
+
+---
+
+## ⚙️ Setup Instructions
 
 ### Prerequisites
-- Node.js (v18+)
-- MongoDB
-- Docker (optional)
+- Node.js (v18 or higher)
+- MongoDB (Local or Atlas cluster)
+- Docker & Docker Compose (Optional but recommended)
 
-### 1. Environment Variables
-Copy the `.env.example` file to `.env` in the `backend/` directory and configure the environment variables:
+### 1. Environment Configuration
+Duplicate the `.env.example` file located in the root directory into the `backend/` folder:
 ```bash
 cp .env.example backend/.env
 ```
+*Ensure you update the `MONGO_URI` and `JWT_SECRET` with your credentials.*
 
-### 2. Running Locally (Without Docker)
+### 2. Method A: Running with Docker (Preferred)
+Launch the entire infrastructure (Frontend, Backend, and MongoDB) seamlessly:
+```bash
+docker-compose up --build
+```
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:5000`
 
-**Start Backend**:
+### 3. Method B: Running Locally (Manual Setup)
+
+**Initialize Backend:**
 ```bash
 cd backend
 npm install
 npm run dev
 ```
 
-**Start Frontend**:
+**Initialize Frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-The frontend will run on `http://localhost:3000` and the backend on `http://localhost:5000`.
+---
 
-### 3. Running with Docker (Recommended)
-You can start the entire stack (Frontend, Backend, MongoDB) using Docker Compose:
-```bash
-docker-compose up --build
-```
+## 📖 API Documentation
 
-## API Documentation
+### Authentication Endpoints
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Register a new user account | Public |
+| `POST` | `/api/auth/login` | Authenticate and retrieve JWT | Public |
 
-### Authentication
-- `POST /api/auth/register` - Register a new user (`name`, `email`, `password`, `role: 'Admin' | 'Sales User'`)
-- `POST /api/auth/login` - Authenticate user (`email`, `password`)
+### Lead Management Endpoints
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/leads` | Retrieve leads (Supports `page`, `status`, `search`, `sort`) | Protected |
+| `POST` | `/api/leads` | Create a new lead | Protected |
+| `PUT` | `/api/leads/:id` | Update an existing lead | Protected |
+| `DELETE`| `/api/leads/:id` | Permanently remove a lead | Admin Only |
+| `GET` | `/api/leads/export`| Download leads as a CSV file | Admin Only |
 
-### Leads
-- `GET /api/leads` - Get leads with pagination, filtering, and search
-  - Query Params: `page`, `status`, `source`, `search`, `sort`
-- `POST /api/leads` - Create a new lead
-- `GET /api/leads/:id` - Get a specific lead
-- `PUT /api/leads/:id` - Update a lead
-- `DELETE /api/leads/:id` - Delete a lead (Admin only)
-- `GET /api/leads/export` - Export leads as CSV (Admin only)
+---
 
-## Features
-- **Role-Based Access**: Admins can create, edit, delete any leads and export CSVs. Sales Users can only view leads and edit their assigned leads.
-- **Advanced Filtering**: Filter by status, source, and search by name/email simultaneously.
-- **Debounced Search**: Efficient backend searching with a custom `useDebounce` hook.
-- **Pagination**: Server-side MongoDB pagination using skip and limit.
-- **Security**: Password hashing with bcrypt, JWT authorization, and input validation using Zod.
+<p align="center">
+  <i>Developed with ❤️ for the Full Stack Engineering Internship Assignment.</i>
+</p>
