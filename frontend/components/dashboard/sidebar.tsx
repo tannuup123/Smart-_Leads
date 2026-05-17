@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Users, BarChart3, MessageSquare, FileText,
+  Download, Settings, Zap, LogOut, ChevronLeft
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
