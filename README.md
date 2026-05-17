@@ -19,6 +19,18 @@
 [![Made with Love](https://img.shields.io/badge/Made%20with-%E2%9D%A4%EF%B8%8F-red?style=flat-square)](https://github.com/tannuup123/Smart-_Leads)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
+<br /><br />
+
+### 🌐 Live Production Deployments
+
+<a href="https://smart-leads-five.vercel.app/" target="_blank">
+  <img src="https://img.shields.io/badge/Live%20Demo-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo Vercel" />
+</a>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://smart-leads-3gds.onrender.com/api" target="_blank">
+  <img src="https://img.shields.io/badge/API%20Endpoint-Render-indigo?style=for-the-badge&logo=render&logoColor=white" alt="API Endpoint Render" />
+</a>
+
 </div>
 
 ---
