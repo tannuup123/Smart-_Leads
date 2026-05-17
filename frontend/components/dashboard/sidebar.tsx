@@ -5,13 +5,20 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Users, BarChart3, MessageSquare, FileText,
-  Download, Settings, Zap, LogOut, ChevronLeft
+  Download, Settings, Zap, LogOut, ChevronLeft, UserCircle
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/useAuthStore'
 
-const navItems = [
+interface NavItem {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  href: string
+  badge?: number
+}
+
+const adminNavItems: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { label: 'Leads', icon: Users, href: '/dashboard/leads' },
   { label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
@@ -19,6 +26,14 @@ const navItems = [
   { label: 'Reports', icon: FileText, href: '/dashboard/reports' },
   { label: 'Export CSV', icon: Download, href: '/dashboard/export' },
   { label: 'Settings', icon: Settings, href: '/dashboard/settings' },
+]
+
+const salesNavItems: NavItem[] = [
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+  { label: 'My Leads', icon: Users, href: '/dashboard/leads' },
+  { label: 'Analytics', icon: BarChart3, href: '/dashboard/analytics' },
+  { label: 'Messages', icon: MessageSquare, href: '/dashboard/messages', badge: 3 },
+  { label: 'Profile', icon: UserCircle, href: '/dashboard/settings' },
 ]
 
 interface SidebarProps {
@@ -30,6 +45,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
   const initials = user?.name ? user.name.substring(0, 2).toUpperCase() : 'U'
+  const navItems = user?.role === 'Sales User' ? salesNavItems : adminNavItems
 
   return (
     <motion.aside

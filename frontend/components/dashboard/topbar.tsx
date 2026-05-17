@@ -102,6 +102,9 @@ export function Topbar({ title = 'Dashboard' }: TopbarProps) {
               {initials}
             </div>
             <span className="text-sm text-foreground hidden sm:block">{user?.name || 'User'}</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full hidden sm:block ${user?.role === 'Admin' ? 'bg-primary/20 text-primary' : 'bg-emerald-500/20 text-emerald-400'}`}>
+              {user?.role || 'User'}
+            </span>
             <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
 
