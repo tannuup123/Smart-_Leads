@@ -6,7 +6,7 @@ import { z } from "zod";
 const leadSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  status: z.enum(["New", "Contacted", "Qualified", "Lost"]).optional(),
+  status: z.enum(["New", "Contacted", "Qualified", "Lost", "Accepted"]).optional(),
   source: z.enum(["Website", "Instagram", "Referral"]),
   assignedTo: z.string().optional(),
 });
@@ -46,9 +46,9 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    const { status, source, search, sort } = req.query;
+    const { status, source, search, sort, tab } = req.query;
 
-    const query: Record<string, unknown> = {};
+    const query: Record<string, any> = {};
 
     if (status) query.status = status;
     if (source) query.source = source;
@@ -59,10 +59,18 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
       ];
     }
 
-    // Role-based visibility:
-    // If we want Sales User to only view their assigned leads, we add this. 
-    // The prompt says "Sales User: View leads" (doesn't explicitly say only assigned, but it's safe to assume they can view all or assigned. Let's let them view all, but only edit assigned).
-    
+    // Role-based visibility and tab filtering
+    if (req.user?.role === "Sales User") {
+      if (tab === "available") {
+        query.assignedTo = { $eq: null }; 
+      } else {
+        query.assignedTo = req.user.id;
+      }
+    } else if (req.user?.role === "Admin") {
+      if (tab === "requests") {
+        query.requestedBy = { $exists: true, $ne: [] };
+      }
+    }
     let sortOption = -1; // latest
     if (sort === "oldest") sortOption = 1;
 
@@ -71,7 +79,8 @@ export const getLeads = async (req: AuthRequest, res: Response, next: NextFuncti
       .sort({ createdAt: sortOption as any })
       .skip(skip)
       .limit(limit)
-      .populate("assignedTo", "name email");
+      .populate("assignedTo", "name email")
+      .populate("requestedBy", "name email");
 
     res.json({
       data: leads,
@@ -170,6 +179,80 @@ export const exportLeadsCsv = async (req: AuthRequest, res: Response, next: Next
     ].join("\n");
 
     res.send(csvContent);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const requestLead = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) {
+      res.status(404);
+      throw new Error("Lead not found");
+    }
+
+    if (lead.assignedTo) {
+      res.status(400);
+      throw new Error("Lead is already assigned");
+    }
+
+    if (!lead.requestedBy?.includes(req.user?.id as any)) {
+      lead.requestedBy?.push(req.user?.id as any);
+      await lead.save();
+    }
+
+    res.json({ message: "Lead requested successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const approveRequest = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (req.user?.role !== "Admin") {
+      res.status(403);
+      throw new Error("Only admins can approve requests");
+    }
+
+    const { userId } = req.body;
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) {
+      res.status(404);
+      throw new Error("Lead not found");
+    }
+
+    lead.assignedTo = userId;
+    lead.requestedBy = [];
+    lead.status = "Accepted";
+    await lead.save();
+
+    res.json(lead);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectRequest = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    if (req.user?.role !== "Admin") {
+      res.status(403);
+      throw new Error("Only admins can reject requests");
+    }
+
+    const { userId } = req.body;
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) {
+      res.status(404);
+      throw new Error("Lead not found");
+    }
+
+    if (lead.requestedBy) {
+      lead.requestedBy = lead.requestedBy.filter((id) => id.toString() !== userId);
+      await lead.save();
+    }
+
+    res.json(lead);
   } catch (error) {
     next(error);
   }

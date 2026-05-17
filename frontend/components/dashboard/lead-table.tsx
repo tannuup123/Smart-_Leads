@@ -28,6 +28,7 @@ interface Lead {
   source: LeadSource;
   createdAt: string;
   assignedTo?: { _id: string; name: string };
+  requestedBy?: { _id: string; name: string }[];
 }
 
 const leadSchema = z.object({
@@ -208,14 +209,16 @@ export function LeadTable() {
   const [sortKey, setSortKey] = useState<SortKey>('createdAt')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [page, setPage] = useState(1)
+  const [activeTab, setActiveTab] = useState<'mine' | 'available' | 'all' | 'requests'>(user?.role === 'Admin' ? 'all' : 'mine')
   const [modal, setModal] = useState<{ open: boolean; mode: 'create'|'edit'|'view'; lead?: Lead | null }>({ open: false, mode: 'create' })
   const [actionMenu, setActionMenu] = useState<string | null>(null)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['leads', page, debouncedSearch, statusFilter, sourceFilter, sortKey, sortDir],
+    queryKey: ['leads', page, debouncedSearch, statusFilter, sourceFilter, sortKey, sortDir, activeTab],
     queryFn: async () => {
       const params = new URLSearchParams()
       params.append('page', page.toString())
+      if (activeTab) params.append('tab', activeTab)
       if (debouncedSearch) params.append('search', debouncedSearch)
       if (statusFilter !== 'All') params.append('status', statusFilter)
       if (sourceFilter !== 'All') params.append('source', sourceFilter)
@@ -234,6 +237,30 @@ export function LeadTable() {
     onError: (error: unknown) => {
       const err = error as any;
       toast.error(err.response?.data?.message || 'Failed to delete lead')
+    }
+  })
+
+  const requestMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/leads/${id}/request`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      toast.success('Lead requested successfully')
+    }
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: ({ id, userId }: { id: string, userId: string }) => api.put(`/leads/${id}/approve`, { userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      toast.success('Request approved')
+    }
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, userId }: { id: string, userId: string }) => api.put(`/leads/${id}/reject`, { userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      toast.success('Request rejected')
     }
   })
 
@@ -274,6 +301,19 @@ export function LeadTable() {
       transition={{ duration: 0.5, delay: 0.5 }}
       className="glass rounded-2xl border border-white/5 overflow-hidden"
     >
+      <div className="flex border-b border-border overflow-x-auto">
+        {user?.role === 'Admin' ? (
+          <>
+            <button onClick={() => { setActiveTab('all'); setPage(1) }} className={cn("px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap", activeTab === 'all' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>All Leads</button>
+            <button onClick={() => { setActiveTab('requests'); setPage(1) }} className={cn("px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap", activeTab === 'requests' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>Lead Requests</button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => { setActiveTab('mine'); setPage(1) }} className={cn("px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap", activeTab === 'mine' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>My Leads</button>
+            <button onClick={() => { setActiveTab('available'); setPage(1) }} className={cn("px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap", activeTab === 'available' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>Available Leads</button>
+          </>
+        )}
+      </div>
       <div className="p-5 border-b border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
@@ -350,14 +390,14 @@ export function LeadTable() {
                   { label: 'Email', key: 'email' as SortKey },
                   { label: 'Status', key: 'status' as SortKey },
                   { label: 'Source', key: 'source' as SortKey },
-                  { label: 'Created At', key: 'createdAt' as SortKey },
+                  { label: 'Created', key: 'createdAt' },
                   { label: 'Assigned To', key: null },
-                  { label: '', key: null },
+                  { label: 'Actions', key: null },
                 ].map((col) => (
                   <th
                     key={col.label}
                     className={cn('px-5 py-3.5 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide', col.key && 'cursor-pointer hover:text-foreground transition-colors select-none')}
-                    onClick={() => col.key && handleSort(col.key)}
+                    onClick={() => col.key && handleSort(col.key as SortKey)}
                   >
                     <span className="flex items-center">
                       {col.label}
@@ -396,43 +436,63 @@ export function LeadTable() {
                     <td className="px-5 py-4 text-muted-foreground">{new Date(lead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                     <td className="px-5 py-4 text-muted-foreground">{lead.assignedTo?.name || '-'}</td>
                     <td className="px-5 py-4">
-                      <div className="relative">
+                      {activeTab === 'available' && user?.role === 'Sales User' ? (
                         <button
-                          onClick={() => setActionMenu(actionMenu === lead._id ? null : lead._id)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
+                          onClick={() => requestMutation.mutate(lead._id)}
+                          disabled={lead.requestedBy?.some(req => req._id === user?._id) || requestMutation.isPending}
+                          className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
-                          <MoreHorizontal className="w-4 h-4" />
+                          {lead.requestedBy?.some(req => req._id === user?._id) ? 'Requested' : 'Request to Work'}
                         </button>
-                        {actionMenu === lead._id && (
-                          <>
-                            <div className="fixed inset-0 z-30" onClick={() => setActionMenu(null)} />
-                            <div className="absolute right-0 top-8 z-40 glass border border-white/10 rounded-xl shadow-xl p-1 w-36">
-                              <button
-                                onClick={() => { setModal({ open: true, mode: 'view', lead }); setActionMenu(null) }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-all"
-                              >
-                                <EyeIcon className="w-3.5 h-3.5" /> View
-                              </button>
-                              {(user?.role === 'Admin' || (user?.role === 'Sales User' && lead.assignedTo?._id === user?._id)) && (
+                      ) : activeTab === 'requests' && user?.role === 'Admin' ? (
+                        <div className="flex flex-col gap-2">
+                          {lead.requestedBy?.map(req => (
+                            <div key={req._id} className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground truncate max-w-[80px]" title={req.name}>{req.name}</span>
+                              <button onClick={() => approveMutation.mutate({ id: lead._id, userId: req._id })} disabled={approveMutation.isPending} className="px-2 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-md text-[10px] font-bold disabled:opacity-50">Accept</button>
+                              <button onClick={() => rejectMutation.mutate({ id: lead._id, userId: req._id })} disabled={rejectMutation.isPending} className="px-2 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-md text-[10px] font-bold disabled:opacity-50">Reject</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <button
+                            onClick={() => setActionMenu(actionMenu === lead._id ? null : lead._id)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </button>
+                          {actionMenu === lead._id && (
+                            <>
+                              <div className="fixed inset-0 z-30" onClick={() => setActionMenu(null)} />
+                              <div className="absolute right-0 top-8 z-40 glass border border-white/10 rounded-xl shadow-xl p-1 w-36">
                                 <button
-                                  onClick={() => { setModal({ open: true, mode: 'edit', lead }); setActionMenu(null) }}
+                                  onClick={() => { setModal({ open: true, mode: 'view', lead }); setActionMenu(null) }}
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-all"
                                 >
-                                  <Edit2 className="w-3.5 h-3.5" /> Edit
+                                  <EyeIcon className="w-3.5 h-3.5" /> View
                                 </button>
-                              )}
-                              {user?.role === 'Admin' && (
-                                <button
-                                  onClick={() => { deleteMutation.mutate(lead._id); setActionMenu(null) }}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
+                                {(user?.role === 'Admin' || (user?.role === 'Sales User' && lead.assignedTo?._id === user?._id)) && (
+                                  <button
+                                    onClick={() => { setModal({ open: true, mode: 'edit', lead }); setActionMenu(null) }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg transition-all"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" /> Edit
+                                  </button>
+                                )}
+                                {user?.role === 'Admin' && (
+                                  <button
+                                    onClick={() => { deleteMutation.mutate(lead._id); setActionMenu(null) }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                                  </button>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </motion.tr>
                 ))}

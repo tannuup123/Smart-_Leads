@@ -1,4 +1,4 @@
-export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Lost'
+export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Lost' | 'Accepted'
 export type LeadSource = 'Website' | 'Referral' | 'LinkedIn' | 'Cold Email' | 'Webinar' | 'Organic'
 
 export interface Lead {
@@ -59,4 +59,5 @@ export const STATUS_COLORS: Record<LeadStatus, string> = {
   Contacted: 'text-yellow-400 bg-yellow-400/10',
   Qualified: 'text-emerald-400 bg-emerald-400/10',
   Lost: 'text-red-400 bg-red-400/10',
+  Accepted: 'text-indigo-400 bg-indigo-400/10',
 }
