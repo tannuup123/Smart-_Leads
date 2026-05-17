@@ -177,35 +177,424 @@ npm run dev
 
 ## 📖 API Reference
 
-### 🔑 Auth Endpoints
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Register a new user | Public |
-| `POST` | `/api/auth/login` | Login and get JWT token | Public |
-| `GET` | `/api/auth/sales-users` | List all Sales Users | Protected |
+> **Base URL:** `http://localhost:5000/api`
+>
+> All protected routes require a Bearer token in the Authorization header:
+> ```
+> Authorization: Bearer <your_jwt_token>
+> ```
 
-### 📋 Lead Endpoints
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/leads` | Get leads (supports `tab`, `page`, `search`, `status`, `source`, `sort`) | Protected |
-| `POST` | `/api/leads` | Create a new lead (with optional `assignedTo`) | Protected |
-| `GET` | `/api/leads/:id` | Get single lead by ID | Protected |
-| `PUT` | `/api/leads/:id` | Update a lead | Protected |
-| `DELETE` | `/api/leads/:id` | Delete a lead | Admin Only |
-| `GET` | `/api/leads/export` | Export all leads as CSV | Admin Only |
-| `POST` | `/api/leads/:id/request` | Sales User requests a lead | Sales User |
-| `PUT` | `/api/leads/:id/approve` | Admin approves a user's request | Admin Only |
-| `PUT` | `/api/leads/:id/reject` | Admin rejects a user's request | Admin Only |
+---
 
-### Query Parameters for `GET /api/leads`
-| Param | Values | Description |
-| :--- | :--- | :--- |
-| `tab` | `all`, `requests`, `mine`, `available` | Role-specific tab filter |
-| `page` | `1`, `2`, ... | Pagination page number |
-| `search` | any string | Regex search on name/email |
-| `status` | `New`, `Contacted`, `Qualified`, `Lost`, `Accepted` | Filter by status |
-| `source` | `Website`, `Instagram`, `Referral` | Filter by source |
-| `sort` | `oldest` | Sort ascending; default is latest-first |
+### 🔑 Authentication
+
+<details>
+<summary><b>POST</b> &nbsp; <code>/api/auth/register</code> &nbsp;—&nbsp; Register a New User</summary>
+
+<br/>
+
+**Access:** `Public`
+
+**Request Body:**
+```json
+{
+  "name": "Kirtee Jeena",
+  "email": "kirtee@example.com",
+  "password": "mypassword123",
+  "role": "Sales User"
+}
+```
+> `role` is optional. Defaults to `"Sales User"`. Can be `"Admin"` or `"Sales User"`.
+
+**Response `201 Created`:**
+```json
+{
+  "_id": "664f1a2b3c4d5e6f7a8b9c0d",
+  "name": "Kirtee Jeena",
+  "email": "kirtee@example.com",
+  "role": "Sales User",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+}
+```
+
+**Error Responses:**
+
+| Code | Message |
+|------|---------|
+| `400` | `"User already exists"` |
+| `400` | `"Name must be at least 2 characters"` |
+
+</details>
+
+---
+
+<details>
+<summary><b>POST</b> &nbsp; <code>/api/auth/login</code> &nbsp;—&nbsp; Login & Get Token</summary>
+
+<br/>
+
+**Access:** `Public`
+
+**Request Body:**
+```json
+{
+  "email": "kirtee@example.com",
+  "password": "mypassword123"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "_id": "664f1a2b3c4d5e6f7a8b9c0d",
+  "name": "Kirtee Jeena",
+  "email": "kirtee@example.com",
+  "role": "Sales User",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+}
+```
+
+**Error Responses:**
+
+| Code | Message |
+|------|---------|
+| `401` | `"Invalid email or password"` |
+
+</details>
+
+---
+
+<details>
+<summary><b>GET</b> &nbsp; <code>/api/auth/sales-users</code> &nbsp;—&nbsp; List All Sales Users</summary>
+
+<br/>
+
+**Access:** `🔐 Protected` (Any logged-in user)
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`:**
+```json
+[
+  {
+    "_id": "664f1a2b3c4d5e6f7a8b9c0d",
+    "name": "Kirtee Jeena",
+    "email": "kirtee@example.com"
+  },
+  {
+    "_id": "664f1a2b3c4d5e6f7a8b9c1e",
+    "name": "Rahul Mehta",
+    "email": "rahul@example.com"
+  }
+]
+```
+
+</details>
+
+---
+
+### 📋 Lead Management
+
+<details>
+<summary><b>GET</b> &nbsp; <code>/api/leads</code> &nbsp;—&nbsp; Get Leads (Tabbed, Paginated, Filtered)</summary>
+
+<br/>
+
+**Access:** `🔐 Protected`
+
+**Query Parameters:**
+
+| Parameter | Type | Values | Description |
+|-----------|------|--------|-------------|
+| `tab` | `string` | `all` · `requests` · `mine` · `available` | Role-specific view filter |
+| `page` | `number` | `1`, `2`, ... | Page number (default: `1`) |
+| `search` | `string` | any text | Regex search on `name` and `email` |
+| `status` | `string` | `New` · `Contacted` · `Qualified` · `Lost` · `Accepted` | Filter by lead status |
+| `source` | `string` | `Website` · `Instagram` · `Referral` | Filter by lead source |
+| `sort` | `string` | `oldest` | Sort ascending by date; default is **latest first** |
+
+**Example Request:**
+```
+GET /api/leads?tab=available&page=1&search=kirtee&sort=oldest
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`:**
+```json
+{
+  "data": [
+    {
+      "_id": "664abc123def456789",
+      "name": "Kirtee Jeena",
+      "email": "kirtee@example.com",
+      "status": "New",
+      "source": "Website",
+      "assignedTo": null,
+      "requestedBy": [],
+      "createdAt": "2024-05-17T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 42,
+    "pages": 5,
+    "page": 1
+  }
+}
+```
+
+> **Tab Behavior:**
+> - `mine` → Only leads assigned to the logged-in Sales User
+> - `available` → Unassigned open-pool leads (Sales User only)
+> - `all` → All leads in the system (Admin only)
+> - `requests` → Leads with pending `requestedBy` entries (Admin only)
+
+</details>
+
+---
+
+<details>
+<summary><b>POST</b> &nbsp; <code>/api/leads</code> &nbsp;—&nbsp; Create a New Lead</summary>
+
+<br/>
+
+**Access:** `🔐 Protected`
+
+**Request Body:**
+```json
+{
+  "name": "Arjun Sharma",
+  "email": "arjun@startup.io",
+  "status": "New",
+  "source": "Instagram",
+  "assignedTo": "664f1a2b3c4d5e6f7a8b9c0d"
+}
+```
+
+> `assignedTo` is **optional**.
+> - If provided with a `Sales User` ID → **Direct Assignment** (Method 1)
+> - If omitted or `null` → **Open Pool** lead — all Sales Users can request it (Method 2)
+> - If caller is a `Sales User` → auto-assigned to themselves regardless
+
+**Response `201 Created`:**
+```json
+{
+  "_id": "664f9z8y7x6w5v4u3t2s1r0q",
+  "name": "Arjun Sharma",
+  "email": "arjun@startup.io",
+  "status": "New",
+  "source": "Instagram",
+  "assignedTo": "664f1a2b3c4d5e6f7a8b9c0d",
+  "requestedBy": [],
+  "createdAt": "2024-05-17T10:30:00.000Z"
+}
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>GET</b> &nbsp; <code>/api/leads/:id</code> &nbsp;—&nbsp; Get a Single Lead</summary>
+
+<br/>
+
+**Access:** `🔐 Protected`
+
+**Response `200 OK`:**
+```json
+{
+  "_id": "664f9z8y7x6w5v4u3t2s1r0q",
+  "name": "Arjun Sharma",
+  "email": "arjun@startup.io",
+  "status": "Contacted",
+  "source": "Instagram",
+  "assignedTo": { "_id": "...", "name": "Kirtee Jeena" },
+  "requestedBy": [],
+  "createdAt": "2024-05-17T10:30:00.000Z"
+}
+```
+
+| Code | Message |
+|------|---------|
+| `404` | `"Lead not found"` |
+
+</details>
+
+---
+
+<details>
+<summary><b>PUT</b> &nbsp; <code>/api/leads/:id</code> &nbsp;—&nbsp; Update a Lead</summary>
+
+<br/>
+
+**Access:** `🔐 Protected` (Admin: any lead · Sales User: only assigned leads)
+
+**Request Body** _(all fields optional)_**:**
+```json
+{
+  "name": "Arjun Sharma",
+  "email": "arjun.new@startup.io",
+  "status": "Qualified",
+  "source": "Referral"
+}
+```
+
+**Response `200 OK`:** Returns the updated lead object.
+
+| Code | Message |
+|------|---------|
+| `403` | `"Not authorized to update this lead"` |
+| `404` | `"Lead not found"` |
+
+</details>
+
+---
+
+<details>
+<summary><b>DELETE</b> &nbsp; <code>/api/leads/:id</code> &nbsp;—&nbsp; Delete a Lead</summary>
+
+<br/>
+
+**Access:** `🛡️ Admin Only`
+
+**Response `200 OK`:**
+```json
+{ "message": "Lead removed" }
+```
+
+| Code | Message |
+|------|---------|
+| `403` | `"Admin access required"` |
+| `404` | `"Lead not found"` |
+
+</details>
+
+---
+
+<details>
+<summary><b>GET</b> &nbsp; <code>/api/leads/export</code> &nbsp;—&nbsp; Export Leads as CSV</summary>
+
+<br/>
+
+**Access:** `🛡️ Admin Only`
+
+Downloads a `.csv` file containing all lead records.
+
+**Response:** `Content-Type: text/csv` with attachment download.
+
+```
+name,email,status,source,assignedTo,createdAt
+Arjun Sharma,arjun@startup.io,Qualified,Instagram,Kirtee Jeena,2024-05-17
+...
+```
+
+</details>
+
+---
+
+### 🔄 Lead Request Workflow
+
+<details>
+<summary><b>POST</b> &nbsp; <code>/api/leads/:id/request</code> &nbsp;—&nbsp; Request a Lead (Sales User)</summary>
+
+<br/>
+
+**Access:** `🔐 Sales User Only`
+
+Adds the authenticated Sales User to the lead's `requestedBy` array. The lead must be **unassigned** (open pool).
+
+**Response `200 OK`:**
+```json
+{ "message": "Lead requested successfully" }
+```
+
+| Code | Message |
+|------|---------|
+| `400` | `"You have already requested this lead"` |
+| `400` | `"This lead is already assigned"` |
+| `403` | `"Only Sales Users can request leads"` |
+
+</details>
+
+---
+
+<details>
+<summary><b>PUT</b> &nbsp; <code>/api/leads/:id/approve</code> &nbsp;—&nbsp; Approve a Request (Admin)</summary>
+
+<br/>
+
+**Access:** `🛡️ Admin Only`
+
+Assigns the lead to the specified Sales User, clears all other requests, and updates the lead status to `Accepted`.
+
+**Request Body:**
+```json
+{ "userId": "664f1a2b3c4d5e6f7a8b9c0d" }
+```
+
+**Response `200 OK`:**
+```json
+{
+  "_id": "664f9z8y...",
+  "status": "Accepted",
+  "assignedTo": { "_id": "664f1a2b...", "name": "Kirtee Jeena" },
+  "requestedBy": []
+}
+```
+
+| Code | Message |
+|------|---------|
+| `400` | `"userId is required"` |
+| `404` | `"Lead not found"` |
+
+</details>
+
+---
+
+<details>
+<summary><b>PUT</b> &nbsp; <code>/api/leads/:id/reject</code> &nbsp;—&nbsp; Reject a Request (Admin)</summary>
+
+<br/>
+
+**Access:** `🛡️ Admin Only`
+
+Removes only the specified user from `requestedBy`. The lead remains open for other Sales Users.
+
+**Request Body:**
+```json
+{ "userId": "664f1a2b3c4d5e6f7a8b9c0d" }
+```
+
+**Response `200 OK`:**
+```json
+{ "message": "Request rejected" }
+```
+
+</details>
+
+---
+
+### ⚠️ Global Error Format
+
+All API errors return a consistent JSON structure:
+
+```json
+{
+  "message": "Human-readable error description"
+}
+```
+
+| HTTP Code | Meaning |
+|-----------|---------|
+| `400` | Bad Request — Invalid input or validation failure |
+| `401` | Unauthorized — Missing or invalid JWT token |
+| `403` | Forbidden — Insufficient role permissions |
+| `404` | Not Found — Resource does not exist |
+| `500` | Internal Server Error — Unexpected server failure |
+
 
 ---
 
