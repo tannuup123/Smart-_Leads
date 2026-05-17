@@ -48,6 +48,18 @@ interface LeadModalProps {
 
 function LeadModal({ lead, mode, onClose }: LeadModalProps) {
   const queryClient = useQueryClient()
+  const user = useAuthStore(state => state.user)
+  const [assignTo, setAssignTo] = useState<string>('')
+
+  // Fetch sales users for the Assign To dropdown (Admin only)
+  const { data: salesUsers } = useQuery({
+    queryKey: ['salesUsers'],
+    queryFn: async () => {
+      const { data } = await api.get('/auth/sales-users')
+      return data as { _id: string; name: string; email: string }[]
+    },
+    enabled: user?.role === 'Admin' && mode !== 'view',
+  })
 
   const { register, handleSubmit, formState: { errors } } = useForm<LeadForm>({
     resolver: zodResolver(leadSchema),
@@ -61,10 +73,17 @@ function LeadModal({ lead, mode, onClose }: LeadModalProps) {
 
   const mutation = useMutation({
     mutationFn: async (data: LeadForm) => {
+      const payload: any = { ...data }
+      if (user?.role === 'Admin' && assignTo && assignTo !== 'open') {
+        payload.assignedTo = assignTo
+      } else if (user?.role === 'Admin' && assignTo === 'open') {
+        // Open pool: don't assign anyone
+        payload.assignedTo = undefined
+      }
       if (lead && mode === 'edit') {
-        return api.put(`/leads/${lead._id}`, data)
+        return api.put(`/leads/${lead._id}`, payload)
       } else {
-        return api.post('/leads', data)
+        return api.post('/leads', payload)
       }
     },
     onSuccess: () => {
@@ -179,6 +198,27 @@ function LeadModal({ lead, mode, onClose }: LeadModalProps) {
                 {errors.source && <p className="text-red-500 text-xs mt-1">{errors.source.message}</p>}
               </div>
             </div>
+
+            {user?.role === 'Admin' && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
+                <select
+                  value={assignTo}
+                  onChange={e => setAssignTo(e.target.value)}
+                  className="w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="open">🌐 Anyone (Open Pool)</option>
+                  {salesUsers?.map(u => (
+                    <option key={u._id} value={u._id}>👤 {u.name} ({u.email})</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {assignTo === 'open' || !assignTo
+                    ? 'Lead will be visible to all Sales Users for requests.'
+                    : 'Lead will be directly assigned to this user.'}
+                </p>
+              </div>
+            )}
 
             <div className="flex gap-3 mt-6">
               <button type="button" onClick={onClose} className="flex-1 glass border border-white/10 text-foreground py-2.5 rounded-xl text-sm font-medium hover:bg-white/5 transition-all">

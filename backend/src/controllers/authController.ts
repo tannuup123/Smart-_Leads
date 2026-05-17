@@ -90,3 +90,12 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     next(error);
   }
 };
+
+export const getSalesUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const users = await User.find({ role: "Sales User" }).select("_id name email");
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+};
